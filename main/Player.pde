@@ -5,6 +5,7 @@ class Player extends Actor {
   Player(float x, float y) {
     super(x, y);
     size = 40; // Define um tamanho maior para o jogador
+    hp = 10;
   }
 
   // Atualiza a posição do jogador com base nas teclas pressionadas
@@ -50,6 +51,11 @@ class Player extends Actor {
     if(other instanceof PowerUp) {
       numBullets++;
       actors.remove(other);
+    } else if (other instanceof Enemy || other instanceof EnemyBullet) {
+      hp--;
+      if(hp <= 0) {
+        actors.remove(this);
+      }
     }
   }
 }

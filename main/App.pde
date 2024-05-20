@@ -18,6 +18,11 @@ int numBullets = 1; // Número inicial de balas disparadas
 int powerUpInterval = 5000; // Intervalo para aparecer um novo poder em milissegundos
 int lastPowerUpTime = 0; // Tempo da última geração de poder
 
+// Enemies
+int maxEnemies = 10; // Número máximo de inimigos na tela
+int enemyRespawnTime = 1000;
+int lastEnemyRespawn = 0;
+
 // Frames da imagem da nave
 PImage[] playerImages = new PImage[3];
 int currentFrame = 0;
@@ -40,6 +45,7 @@ void setup() {
   player = new Player(width / 2, height - 50); // Cria o jogador no centro inferior da tela
   actors = new ArrayList<Actor>(); // Inicializa a lista de atores
   actors.add(player); // Adiciona o jogador à lista de atores
+  spawnEnemy();
 }
 
 // Loop principal do jogo
@@ -51,6 +57,7 @@ void draw() {
   handleShooting();
   updatePlayerFrame(); // Atualiza o frame do jogador
   generatePowerUps(); // Gera poderes periodicamente
+  respawnEnemies();
 }
 // Atualiza e exibe todos os atores
 void handleActors() {
@@ -97,7 +104,7 @@ void handleShooting() {
   int currentTime = millis();
   if(spacePressed & currentTime - lastFired >= fireRate) {
     for(int i = 0; i < numBullets; i++) {
-      Bullet bullet = new Bullet(player.x + (i * 10) - (numBullets * 5), player.y - 30);
+      Bullet bullet = new Bullet(player.x + (i * 10) - (numBullets * 5) + 5, player.y - 30);
       actors.add(bullet);
     }
     lastFired = currentTime;
@@ -149,6 +156,30 @@ void generatePowerUps() {
     actors.add(powerUp);
     lastPowerUpTime = currentTime;
   }
+}
+
+void respawnEnemies() {
+  int currentTime = millis();
+  int enemyCount = 0;
+  for (Actor actor : actors) {
+    if (actor instanceof Enemy) {
+      enemyCount++;
+    }
+  }
+  if (enemyCount < maxEnemies && currentTime - lastEnemyRespawn >= enemyRespawnTime) {
+    spawnEnemy();
+    lastEnemyRespawn = currentTime;
+  }
+}
+
+void spawnEnemy() {
+  // Define o intervalo para o centro da tela
+  float centerX = width - (width - 200);
+  float centerY = height - (height - 100);
+  float x = centerX + random(-100, 100);
+  float y = centerY + random(-100, 100);
+  Enemy enemy = new Enemy(x, y);
+  actors.add(enemy);
 }
 
 // Dispara uma bala quando o mouse é pressionado

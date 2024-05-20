@@ -2,6 +2,7 @@
 class Actor {
   float x, y, vx, vy; // Posição e velocidade do ator
   float size = 20; // Tamanho padrão do ator
+  int hp = 10;
   
   Actor(float x, float y) {
     this.x = x; // Inicializa a posição 'x'
