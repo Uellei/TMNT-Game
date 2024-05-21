@@ -11,13 +11,13 @@ class EnemyBullet extends Actor {
     ellipse(x,y,size,size);
   }
   
-  void handleCollision(Actor other) {
-    if(other instanceof Player) {
-      other.hp--;
-      if(other.hp <=0) {
-        actors.remove(other);
-      }
-      actors.remove(this);
-    }
-  }
+  //void handleCollision(Actor other) {
+  //  if(other instanceof Player) {
+  //    other.hp--;
+  //    if(other.hp <=0) {
+  //      actors.remove(other);
+  //    }
+  //    actors.remove(this);
+  //  }
+  //}
 }

@@ -1,3 +1,5 @@
+boolean isGameOver = false;
+
 // Lista de atores no jogo
 ArrayList<Actor> actors;
 // Instância do jogador
@@ -17,6 +19,8 @@ int lastFired = 0;
 int numBullets = 1; // Número inicial de balas disparadas
 int powerUpInterval = 5000; // Intervalo para aparecer um novo poder em milissegundos
 int lastPowerUpTime = 0; // Tempo da última geração de poder
+int homingBulletInterval = 300;
+int lastHomingFired = 0;
 
 // Enemies
 int maxEnemies = 10; // Número máximo de inimigos na tela
@@ -33,10 +37,31 @@ int frameInterval = 100;
 // Configuração inicial
 void setup() {
   size(800, 800); // Define o tamanho da janela
+  initializateGame();
+}
+
+// Loop principal do jogo
+void draw() {
+  if(isGameOver) {
+    showGameOverScreen();
+  } else {
+    background(255); // Define o fundo como branco
+    image(backgroundImage, 0, 0, width, height); // Desenha a imagem de fundo
+    handleActors(); // Atualiza e exibe todos os atores
+    checkCollisions(); // Verifica colisões entre atores
+    handleShooting();
+    generateHomingBullets();
+    updatePlayerFrame(); // Atualiza o frame do jogador
+    generatePowerUps(); // Gera poderes periodicamente
+    respawnEnemies();
+  }
+}
+
+void initializateGame() {
   // Nave 1
-  playerImages[0] = loadImage("../assets/images/naves/nave1/nave-frame1.png");
-  playerImages[1] = loadImage("../assets/images/naves/nave1/nave-frame2.png");
-  playerImages[2] = loadImage("../assets/images/naves/nave1/nave-frame3.png");
+  playerImages[0] = loadImage("../assets/images/naves/nave1/nave1-nivel2-frame1.png");
+  playerImages[1] = loadImage("../assets/images/naves/nave1/nave1-nivel2-frame2.png");
+  playerImages[2] = loadImage("../assets/images/naves/nave1/nave1-nivel2-frame3.png");
   // Nave 2
   //playerImages[0] = loadImage("../assets/images/naves/nave2/nave-frame1.png");
   //playerImages[1] = loadImage("../assets/images/naves/nave2/nave-frame2.png");
@@ -48,17 +73,6 @@ void setup() {
   spawnEnemy();
 }
 
-// Loop principal do jogo
-void draw() {
-  background(255); // Define o fundo como branco
-  image(backgroundImage, 0, 0, width, height); // Desenha a imagem de fundo
-  handleActors(); // Atualiza e exibe todos os atores
-  checkCollisions(); // Verifica colisões entre atores
-  handleShooting();
-  updatePlayerFrame(); // Atualiza o frame do jogador
-  generatePowerUps(); // Gera poderes periodicamente
-  respawnEnemies();
-}
 // Atualiza e exibe todos os atores
 void handleActors() {
   for (int i = actors.size() - 1; i >= 0; i--) { // Percorre a lista de atores de trás para frente
@@ -113,16 +127,20 @@ void handleShooting() {
 
 // Gerencia as teclas pressionadas pelo jogador
 void keyPressed() {
-  if (key == 'a' || key == 'A' || keyCode == LEFT) {
-    leftPressed = true;
-  } else if (key == 'd' || key == 'D' || keyCode == RIGHT) {
-    rightPressed = true;
-  } else if (key == 'w' || key == 'W' || keyCode == UP) {
-    upPressed = true;
-  } else if (key == 's' || key == 'S' || keyCode == DOWN) {
-    downPressed = true;
-  } else if (key == ' ') {
-    spacePressed = true;
+  if (isGameOver && (key == 'r' || key == 'R')) {
+    resetGame();
+  } else {
+     if (key == 'a' || key == 'A' || keyCode == LEFT) {
+        leftPressed = true;
+      } else if (key == 'd' || key == 'D' || keyCode == RIGHT) {
+        rightPressed = true;
+      } else if (key == 'w' || key == 'W' || keyCode == UP) {
+        upPressed = true;
+      } else if (key == 's' || key == 'S' || keyCode == DOWN) {
+        downPressed = true;
+      } else if (key == ' ') {
+        spacePressed = true;
+      } 
   }
 }
 
@@ -180,6 +198,39 @@ void spawnEnemy() {
   float y = centerY + random(-100, 100);
   Enemy enemy = new Enemy(x, y);
   actors.add(enemy);
+}
+
+// Adiciona um novo método para gerar balas seguidoras periodicamente
+void generateHomingBullets() {
+  int currentTime = millis();
+  if (currentTime - lastHomingFired >= homingBulletInterval) {
+    HomingBullet bullet = new HomingBullet(player.x + 20, player.y - 30);
+    actors.add(bullet);
+    lastHomingFired = currentTime;
+  }
+}
+
+// Exibe a tela de game over
+void showGameOverScreen() {
+  background(0); // Fundo preto para a tela de game over
+  textSize(32);
+  fill(255);
+  text("GAME OVER", width / 2, height / 2 - 60);
+  textAlign(CENTER, CENTER);
+  text("Pressione R para reiniciar", width / 2, height / 2 - 20);
+}
+
+// Função para reiniciar o jogo
+void resetGame() {
+  isGameOver = false;
+  actors.clear();
+  player = new Player(width / 2, height - 50);
+  actors.add(player);
+  lastFired = millis();
+  lastPowerUpTime = millis();
+  lastEnemyRespawn = millis();
+  numBullets = 1;
+  spawnEnemy();
 }
 
 // Dispara uma bala quando o mouse é pressionado

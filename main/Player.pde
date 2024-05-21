@@ -1,4 +1,6 @@
 PImage playerImage;
+int invulnerabilityTime = 1000; // Tempo de invulnerabilidade em milissegundos (1 segundo)
+int lastHitTime = 0; // Tempo da última colisão
 
 // Classe para o jogador, que é um tipo de ator
 class Player extends Actor {
@@ -48,14 +50,23 @@ class Player extends Actor {
   
   // Trata a colisão com um poder
   void handleCollision(Actor other) {
-    if(other instanceof PowerUp) {
-      numBullets++;
-      actors.remove(other);
-    } else if (other instanceof Enemy || other instanceof EnemyBullet) {
-      hp--;
-      if(hp <= 0) {
-        actors.remove(this);
-      }
+  int currentTime = millis();
+  
+  // Verifica se o jogador está em período de invulnerabilidade
+  if (currentTime - lastHitTime < invulnerabilityTime) {
+    return; // Sai da função sem aplicar dano
+  }
+  
+  if (other instanceof PowerUp) {
+    numBullets++;
+    actors.remove(other);
+  } else if (other instanceof Enemy || other instanceof EnemyBullet) {
+    hp--;
+    lastHitTime = currentTime; // Atualiza o tempo da última colisão
+    if (hp <= 0) {
+      actors.remove(this);
+      isGameOver = true;
     }
   }
+}
 }
