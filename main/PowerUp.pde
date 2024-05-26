@@ -1,6 +1,6 @@
 class PowerUp extends Actor {
   PowerUp(float x, float y) {
-    super(x, y);
+    super(x, y, 5, 5);
     vy = 2; // Movimento para baixo
     size = 20; // Define o tamanho do poder
   }

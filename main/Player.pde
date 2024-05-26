@@ -1,12 +1,10 @@
 PImage playerImage;
-int invulnerabilityTime = 1000; // Tempo de invulnerabilidade em milissegundos (1 segundo)
-int lastHitTime = 0; // Tempo da última colisão
 
 // Classe para o jogador, que é um tipo de ator
 class Player extends Actor {
   Player(float x, float y) {
-    super(x, y);
-    size = 40; // Define um tamanho maior para o jogador
+    super(x, y, 60, 60);
+    size = 40;// Define um tamanho maior para o jogador
     hp = 10;
   }
 
@@ -19,7 +17,7 @@ class Player extends Actor {
     } else {
       vx = 0;
     }
-    if(upPressed) {
+    if (upPressed) {
       vy = -7;
     } else if (downPressed) {
       vy = 7;
@@ -27,46 +25,45 @@ class Player extends Actor {
       vy = 0;
     }
     super.update(); // Chama o método de atualização da classe base
-
-    // Impede que o jogador vá para fora da tela
-    if (x < size / 2) {
-      x = size / 2;
-    } else if (x > width - size / 2) {
-      x = width - size / 2;
-    }
-    if(y < size / 2) {
-      y = size / 2;
-    } else if (y > height - size / 2) {
-      y = height - size / 2;
-    }
+    constrainPosition();
   }
-  
+
   // Exibe o jogador como uma imagem
   void display() {
     //image(playerImage, x - playerImage.width / 2, y - playerImage.height / 2);
     // Exibe o jogador como uma imagem
     image(playerImages[currentFrame], x - playerImages[currentFrame].width / 2, y - playerImages[currentFrame].height / 2);
+    displayHealthBar();//Vida do jogaror :)
   }
-  
+
   // Trata a colisão com um poder
   void handleCollision(Actor other) {
-  int currentTime = millis();
-  
-  // Verifica se o jogador está em período de invulnerabilidade
-  if (currentTime - lastHitTime < invulnerabilityTime) {
-    return; // Sai da função sem aplicar dano
-  }
-  
-  if (other instanceof PowerUp) {
-    numBullets++;
-    actors.remove(other);
-  } else if (other instanceof Enemy || other instanceof EnemyBullet) {
-    hp--;
-    lastHitTime = currentTime; // Atualiza o tempo da última colisão
-    if (hp <= 0) {
-      actors.remove(this);
-      isGameOver = true;
+    if (other instanceof PowerUp) {
+      numBullets++;
+      actors.remove(other);
+    } else if (other instanceof Chefe || other instanceof Fantasma) {
+      hp--;
+      if (hp <= 0) {
+        actors.remove(this);
+      }
     }
   }
+
+  // Trata a barra de vida do jogador
+void displayHealthBar() {
+  float barWidth = 5;
+  float barHeight = 40;
+  float barX = x + playerImages[currentFrame].width / 2;
+  float barY = y - barHeight / 2;
+
+  fill(255, 0, 0);
+  rect(barX, barY, barWidth, barHeight); // Fundo da barra de vida (vermelha)
+  fill(0, 255, 0);
+  rect(barX, barY + barHeight - map(hp, 0, 10, 0, barHeight), barWidth, map(hp, 0, 10, 0, barHeight)); // Barra de vida (verde)
 }
+
+  void constrainPosition() {
+    x = constrain(x, size / 2, width - size / 2);
+    y = constrain(y, size / 2, height - size / 2);
+  }
 }

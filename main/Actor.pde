@@ -1,12 +1,13 @@
-// Classe base para todos os atores do jogo
 class Actor {
   float x, y, vx, vy; // Posição e velocidade do ator
   float size = 20; // Tamanho padrão do ator
   int hp = 10;
-  
-  Actor(float x, float y) {
+
+  // Construtor com tamanho da hitbox
+  Actor(float x, float y, float hitboxWidth, float hitboxHeight) {
     this.x = x; // Inicializa a posição 'x'
     this.y = y; // Inicializa a posição 'y'
+    this.size = max(hitboxWidth, hitboxHeight); // Define o tamanho da hitbox
   }
 
   // Atualiza a posição do ator com base na velocidade

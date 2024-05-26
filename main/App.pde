@@ -1,5 +1,3 @@
-boolean isGameOver = false;
-
 // Lista de atores no jogo
 ArrayList<Actor> actors;
 // Instância do jogador
@@ -19,13 +17,16 @@ int lastFired = 0;
 int numBullets = 1; // Número inicial de balas disparadas
 int powerUpInterval = 5000; // Intervalo para aparecer um novo poder em milissegundos
 int lastPowerUpTime = 0; // Tempo da última geração de poder
-int homingBulletInterval = 300;
-int lastHomingFired = 0;
 
 // Enemies
+PImage bossImage;
+PImage miniEnemyImage;
 int maxEnemies = 10; // Número máximo de inimigos na tela
 int enemyRespawnTime = 1000;
 int lastEnemyRespawn = 0;
+int bossesKilled = 0; // Contador de bosses mortos
+int difficultyLevel = 1; // Nível inicial de dificuldade
+
 
 // Frames da imagem da nave
 PImage[] playerImages = new PImage[3];
@@ -33,35 +34,16 @@ int currentFrame = 0;
 int lastFrameChange = 0;
 int frameInterval = 100;
 
-
 // Configuração inicial
 void setup() {
   size(800, 800); // Define o tamanho da janela
-  initializateGame();
-}
-
-// Loop principal do jogo
-void draw() {
-  if(isGameOver) {
-    showGameOverScreen();
-  } else {
-    background(255); // Define o fundo como branco
-    image(backgroundImage, 0, 0, width, height); // Desenha a imagem de fundo
-    handleActors(); // Atualiza e exibe todos os atores
-    checkCollisions(); // Verifica colisões entre atores
-    handleShooting();
-    generateHomingBullets();
-    updatePlayerFrame(); // Atualiza o frame do jogador
-    generatePowerUps(); // Gera poderes periodicamente
-    respawnEnemies();
-  }
-}
-
-void initializateGame() {
   // Nave 1
-  playerImages[0] = loadImage("../assets/images/naves/nave1/nave1-nivel2-frame1.png");
-  playerImages[1] = loadImage("../assets/images/naves/nave1/nave1-nivel2-frame2.png");
-  playerImages[2] = loadImage("../assets/images/naves/nave1/nave1-nivel2-frame3.png");
+  playerImages[0] = loadImage("../assets/images/naves/nave1/nave-frame1.png");
+  playerImages[1] = loadImage("../assets/images/naves/nave1/nave-frame2.png");
+  playerImages[2] = loadImage("../assets/images/naves/nave1/nave-frame3.png");
+  //enemy
+  bossImage = loadImage("../assets/images/enemy/boss-frame-1.png");
+  miniEnemyImage = loadImage("../assets/images/enemy/gosth.png");
   // Nave 2
   //playerImages[0] = loadImage("../assets/images/naves/nave2/nave-frame1.png");
   //playerImages[1] = loadImage("../assets/images/naves/nave2/nave-frame2.png");
@@ -70,54 +52,70 @@ void initializateGame() {
   player = new Player(width / 2, height - 50); // Cria o jogador no centro inferior da tela
   actors = new ArrayList<Actor>(); // Inicializa a lista de atores
   actors.add(player); // Adiciona o jogador à lista de atores
-  spawnEnemy();
+  spawnChefe();
+}
+
+// Loop principal do jogo
+void draw() {
+  background(255); // Define o fundo como branco
+  image(backgroundImage, 0, 0, width, height); // Desenha a imagem de fundo
+  handleActors(); // Atualiza e exibe todos os atores
+  checkCollisions(); // Verifica colisões entre atores
+  handleShooting();
+  updatePlayerFrame(); // Atualiza o frame do jogador
+  generatePowerUps(); // Gera poderes periodicamente
+  respawnEnemies();
 }
 
 // Atualiza e exibe todos os atores
 void handleActors() {
-  for (int i = actors.size() - 1; i >= 0; i--) { // Percorre a lista de atores de trás para frente
-    Actor actor = actors.get(i); // Obtém o ator atual
-    actor.update(); // Atualiza a posição do ator
-    actor.display(); // Exibe o ator na tela
-    if (actor.isOutOfBounds()) { // Verifica se o ator saiu dos limites da tela
-      actors.remove(i); // Remove o ator da lista se estiver fora da tela
+  for (int i = actors.size() - 1; i >= 0; i--) {
+    Actor actor = actors.get(i);
+    actor.update();
+    actor.display();
+    if (actor.isOutOfBounds()) {
+      actors.remove(i);
+    } else if (actor instanceof Chefe && ((Chefe) actor).hp <= 0) {
+      bossesKilled++;
+    }
+  }
+  // Aumenta a dificuldade e remove os chefes mortos
+  if (bossesKilled > 0 && bossesKilled % 1 == 0) {
+    increaseDifficulty();
+    removeDeadBosses();
+  }
+}
+
+// Remove os chefes mortos da lista de atores
+void removeDeadBosses() {
+  for (int i = actors.size() - 1; i >= 0; i--) {
+    Actor actor = actors.get(i);
+    if (actor instanceof Chefe && ((Chefe) actor).hp <= 0) {
+      actors.remove(i);
     }
   }
 }
 
+
 // Verifica colisões entre todos os pares de atores
 void checkCollisions() {
-  for (int i = 0; i < actors.size(); i++) { // Percorre a lista de atores
-    Actor a = actors.get(i); // Obtém o ator 'a'
-    for (int j = i + 1; j < actors.size(); j++) { // Percorre os atores seguintes
-      Actor b = actors.get(j); // Obtém o ator 'b'
-      if (a.isColliding(b)) { // Verifica colisão entre 'a' e 'b'
-        a.handleCollision(b); // Trata a colisão para o ator 'a'
-        b.handleCollision(a); // Trata a colisão para o ator 'b'
+  for (int i = 0; i < actors.size(); i++) {
+    Actor a = actors.get(i);
+    for (int j = i + 1; j < actors.size(); j++) {
+      Actor b = actors.get(j);
+      if (a.isColliding(b)) {
+        a.handleCollision(b);
+        b.handleCollision(a);
       }
     }
   }
 }
 
-//void handleShooting() {
-//  int currentTime = millis();
-//  if(spacePressed && currentTime - lastFired >= fireRate) {
-//    // Uma bala
-//    //Bullet bullet = new Bullet(player.x, player.y - 20);
-//    //actors.add(bullet);
-//    // Duas balas
-//    Bullet bullet = new Bullet(player.x - 6, player.y - 30);
-//    actors.add(bullet);
-//    Bullet bullet2 = new Bullet(player.x + 6, player.y - 30);
-//    actors.add(bullet2);
-//    lastFired = currentTime;
-//  }
-//}
 
 void handleShooting() {
   int currentTime = millis();
-  if(spacePressed & currentTime - lastFired >= fireRate) {
-    for(int i = 0; i < numBullets; i++) {
+  if (spacePressed & currentTime - lastFired >= fireRate) {
+    for (int i = 0; i < numBullets; i++) {
       Bullet bullet = new Bullet(player.x + (i * 10) - (numBullets * 5) + 5, player.y - 30);
       actors.add(bullet);
     }
@@ -127,20 +125,16 @@ void handleShooting() {
 
 // Gerencia as teclas pressionadas pelo jogador
 void keyPressed() {
-  if (isGameOver && (key == 'r' || key == 'R')) {
-    resetGame();
-  } else {
-     if (key == 'a' || key == 'A' || keyCode == LEFT) {
-        leftPressed = true;
-      } else if (key == 'd' || key == 'D' || keyCode == RIGHT) {
-        rightPressed = true;
-      } else if (key == 'w' || key == 'W' || keyCode == UP) {
-        upPressed = true;
-      } else if (key == 's' || key == 'S' || keyCode == DOWN) {
-        downPressed = true;
-      } else if (key == ' ') {
-        spacePressed = true;
-      } 
+  if (key == 'a' || key == 'A' || keyCode == LEFT) {
+    leftPressed = true;
+  } else if (key == 'd' || key == 'D' || keyCode == RIGHT) {
+    rightPressed = true;
+  } else if (key == 'w' || key == 'W' || keyCode == UP) {
+    upPressed = true;
+  } else if (key == 's' || key == 'S' || keyCode == DOWN) {
+    downPressed = true;
+  } else if (key == ' ') {
+    spacePressed = true;
   }
 }
 
@@ -161,7 +155,7 @@ void keyReleased() {
 
 void updatePlayerFrame() {
   int currentTime = millis();
-  if(currentTime - lastFrameChange >= frameInterval) {
+  if (currentTime - lastFrameChange >= frameInterval) {
     currentFrame = (currentFrame + 1) % playerImages.length;
     lastFrameChange = currentTime;
   }
@@ -169,7 +163,7 @@ void updatePlayerFrame() {
 
 void generatePowerUps() {
   int currentTime = millis();
-  if(currentTime - lastPowerUpTime >= powerUpInterval) {
+  if (currentTime - lastPowerUpTime >= powerUpInterval) {
     PowerUp powerUp = new PowerUp(random(20, width - 20), -20);
     actors.add(powerUp);
     lastPowerUpTime = currentTime;
@@ -180,61 +174,37 @@ void respawnEnemies() {
   int currentTime = millis();
   int enemyCount = 0;
   for (Actor actor : actors) {
-    if (actor instanceof Enemy) {
+    if (actor instanceof Chefe) {
       enemyCount++;
     }
   }
-  if (enemyCount < maxEnemies && currentTime - lastEnemyRespawn >= enemyRespawnTime) {
-    spawnEnemy();
+  // Assegura que apenas um chefe apareça inicialmente
+  if (enemyCount < 1 && currentTime - lastEnemyRespawn >= enemyRespawnTime) {
+    spawnChefe();
     lastEnemyRespawn = currentTime;
   }
 }
 
-void spawnEnemy() {
-  // Define o intervalo para o centro da tela
-  float centerX = width - (width - 200);
-  float centerY = height - (height - 100);
-  float x = centerX + random(-100, 100);
-  float y = centerY + random(-100, 100);
-  Enemy enemy = new Enemy(x, y);
-  actors.add(enemy);
-}
-
-// Adiciona um novo método para gerar balas seguidoras periodicamente
-void generateHomingBullets() {
-  int currentTime = millis();
-  if (currentTime - lastHomingFired >= homingBulletInterval) {
-    HomingBullet bullet = new HomingBullet(player.x + 20, player.y - 30);
-    actors.add(bullet);
-    lastHomingFired = currentTime;
+// Aumenta a dificuldade do jogo
+void increaseDifficulty() {
+  difficultyLevel++;
+  // Aumenta a vida dos chefes e diminui o intervalo de geração de fantasmas conforme o nível de dificuldade
+  for (Actor actor : actors) {
+    if (actor instanceof Chefe) {
+      Chefe chefe = (Chefe) actor;
+      chefe.hp += 50 * difficultyLevel;
+      chefe.fantasmasSpawnInterval -= 500; // Diminui o intervalo de geração de fantasmas
+    }
   }
 }
 
-// Exibe a tela de game over
-void showGameOverScreen() {
-  background(0); // Fundo preto para a tela de game over
-  textSize(32);
-  fill(255);
-  text("GAME OVER", width / 2, height / 2 - 60);
-  textAlign(CENTER, CENTER);
-  text("Pressione R para reiniciar", width / 2, height / 2 - 20);
-}
+void spawnChefe() {
+  float enemyWidth = bossImage.width;
+  float enemyHeight = bossImage.height;
 
-// Função para reiniciar o jogo
-void resetGame() {
-  isGameOver = false;
-  actors.clear();
-  player = new Player(width / 2, height - 50);
-  actors.add(player);
-  lastFired = millis();
-  lastPowerUpTime = millis();
-  lastEnemyRespawn = millis();
-  numBullets = 1;
-  spawnEnemy();
-}
+  float x = random(enemyWidth / 2, width - enemyWidth / 2);
+  float y = random(enemyHeight / 2, height / 2 - enemyHeight / 2); // Garante que os inimigos apareçam na metade superior da tela
 
-// Dispara uma bala quando o mouse é pressionado
-//void mousePressed() {
-//  Bullet bullet = new Bullet(player.x, player.y - 20); // Cria uma nova bala na posição do jogador
-//  actors.add(bullet); // Adiciona a bala à lista de atores
-//}
+  Chefe chefe = new Chefe(x, y, 50 * difficultyLevel, difficultyLevel * 3); // Passa a vida e o número de fantasmas como parâmetros
+  actors.add(chefe);
+}
