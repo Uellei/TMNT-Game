@@ -5,7 +5,7 @@ class Chefe extends Actor {
   int numFantasmas; // Número de fantasmas que o boss gera
 
   Chefe(float x, float y, int hp, int numFantasmas) {
-    super(x, y, bossImage.width, bossImage.height);
+    super(x, y, chefeImage.width, chefeImage.height);
     this.vy = 0; // Movimento para baixo
     this.hp = hp; // Vida do inimigo
     this.numFantasmas = numFantasmas; // Número de fantasmas que o boss gera
@@ -13,7 +13,7 @@ class Chefe extends Actor {
 
   // Exibe o inimigo como uma imagem
   void display() {
-    image(bossImage, x - bossImage.width / 2, y - bossImage.height / 2);
+    image(chefeImage, x - chefeImage.width / 2, y - chefeImage.height / 2);
     displayHealthBar(); // Exibe a barra de vida
   }
 
@@ -47,8 +47,8 @@ class Chefe extends Actor {
   // Exibe a barra de vida do chefe
   void displayHealthBar() {
     fill(255, 0, 0);
-    rect(x - 25, y - bossImage.height / 2 - 10, 50, 5); // Fundo da barra de vida (vermelha)
+    rect(x - 25, y - chefeImage.height / 2 - 10, 50, 5); // Fundo da barra de vida (vermelha)
     fill(0, 255, 0);
-    rect(x - 25, y - bossImage.height / 2 - 10, map(hp, 0, 50 * difficultyLevel, 0, 50), 5); // Barra de vida (verde)
+    rect(x - 25, y - chefeImage.height / 2 - 10, map(hp, 0, 50 * difficultyLevel, 0, 50), 5); // Barra de vida (verde)
   }
 }
