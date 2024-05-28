@@ -1,16 +1,17 @@
+// Classe para balas seguidoras
 class HomingBullet extends Actor {
-  Actor target; // Alvo que a bala está seguindo
+  Actor target;
 
   HomingBullet(float x, float y) {
     super(x, y);
     size = 5;
-    findTarget(); // Encontra o alvo mais próximo ao ser criada
+    findTarget();
   }
 
   void findTarget() {
     float minDist = Float.MAX_VALUE;
     for (Actor actor : actors) {
-      if (actor instanceof Enemy) {
+      if (actor instanceof Chefe || actor instanceof FinalBoss) {
         float dist = dist(x, y, actor.x, actor.y);
         if (dist < minDist) {
           minDist = dist;
@@ -21,15 +22,14 @@ class HomingBullet extends Actor {
   }
 
   boolean isTargetAlive() {
-    return actors.contains(target); // Verifica se o alvo ainda está na lista de atores
+    return actors.contains(target);
   }
 
   void update() {
     if (target == null || !isTargetAlive()) {
-      findTarget(); // Procura um novo alvo se o alvo atual estiver morto ou não existir
+      findTarget();
     }
     if (target != null) {
-      // Movimenta-se em direção ao alvo
       float angle = atan2(target.y - y, target.x - x);
       vx = cos(angle) * 5;
       vy = sin(angle) * 5;
@@ -43,7 +43,7 @@ class HomingBullet extends Actor {
   }
 
   void handleCollision(Actor other) {
-    if (other instanceof Enemy) {
+    if (other instanceof Chefe || other instanceof FinalBoss) {
       other.hp--;
       if (other.hp <= 0) {
         actors.remove(other);

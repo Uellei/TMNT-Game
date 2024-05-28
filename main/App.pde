@@ -1,3 +1,10 @@
+import ddf.minim.*;
+import java.util.ArrayList;
+
+Minim minim;
+AudioSample shootSound;
+AudioSample explosionSound;
+AudioSample damageTake;
 boolean isGameOver = false;
 
 // Lista de atores no jogo
@@ -21,11 +28,22 @@ int powerUpInterval = 5000; // Intervalo para aparecer um novo poder em milisseg
 int lastPowerUpTime = 0; // Tempo da última geração de poder
 int homingBulletInterval = 300;
 int lastHomingFired = 0;
+float dropChance = 1; // Chance de drop de power-up (20%)
+PImage powerUpImage;
 
 // Enemies
-int maxEnemies = 10; // Número máximo de inimigos na tela
+PImage chefeImage;
+PImage fantasmaImage;
+PImage finalBoss;
+int maxEnemies = 1; // Número máximo de miniboss na tela
 int enemyRespawnTime = 1000;
 int lastEnemyRespawn = 0;
+int bossesKilled = 0; // Contador de minibosses mortos
+int difficultyLevel = 1; // Nível inicial de dificuldade
+int cycle = 1; // Variável para contar o número de ciclos/fases
+int minibossesPerCycle = 3; // Número de minibosses por ciclo antes de spawnar o boss
+boolean finalBossActive = false; // Flag para controlar a presença do boss
+int maxYPosition = 200; // Máxima posição Y para o spawn dos chefes
 
 // Frames da imagem da nave
 PImage[] playerImages = new PImage[3];
@@ -37,6 +55,14 @@ int frameInterval = 100;
 // Configuração inicial
 void setup() {
   size(800, 800); // Define o tamanho da janela
+  minim = new Minim(this);
+  shootSound = minim.loadSample("../assets/soundTrack/shoot.wav", 512);
+  explosionSound = minim.loadSample("../assets/soundTrack/explosion.wav", 512);
+  damageTake = minim.loadSample("../assets/soundTrack/damageTake-2.wav", 512);
+  
+  shootSound.setGain(-5); // Reduz o volume do som de tiro
+  explosionSound.setGain(-3); // Reduz o volume do som de explosão
+  
   initializateGame();
 }
 
@@ -50,9 +76,9 @@ void draw() {
     handleActors(); // Atualiza e exibe todos os atores
     checkCollisions(); // Verifica colisões entre atores
     handleShooting();
-    generateHomingBullets();
+    //generateHomingBullets();
     updatePlayerFrame(); // Atualiza o frame do jogador
-    generatePowerUps(); // Gera poderes periodicamente
+    //generatePowerUps(); // Gera poderes periodicamente
     respawnEnemies();
   }
 }
@@ -67,33 +93,84 @@ void initializateGame() {
   //playerImages[1] = loadImage("../assets/images/naves/nave2/nave-frame2.png");
   //playerImages[2] = loadImage("../assets/images/naves/nave2/nave-frame3.png");
   backgroundImage = loadImage("../assets/images/Background1.png");
+  
+  // Carregar imagens dos inimigos
+  chefeImage = loadImage("../assets/images/enemy/boss-frame-1.png");
+  fantasmaImage = loadImage("../assets/images/enemy/gosth.png");
+  finalBoss = loadImage("../assets/images/enemy/finalboss.png");
+  
+  // PowerUp
+  powerUpImage = loadImage("../assets/images/powerUp.png");
+  
   player = new Player(width / 2, height - 50); // Cria o jogador no centro inferior da tela
   actors = new ArrayList<Actor>(); // Inicializa a lista de atores
   actors.add(player); // Adiciona o jogador à lista de atores
-  spawnEnemy();
+  //spawnEnemy();
+  spawnChefe();
 }
+
+// Atualiza e exibe todos os atores - USANDO A DO BRENO
+//void handleActors() {
+//  for (int i = actors.size() - 1; i >= 0; i--) { // Percorre a lista de atores de trás para frente
+//    Actor actor = actors.get(i); // Obtém o ator atual
+//    actor.update(); // Atualiza a posição do ator
+//    actor.display(); // Exibe o ator na tela
+//    if (actor.isOutOfBounds()) { // Verifica se o ator saiu dos limites da tela
+//      actors.remove(i); // Remove o ator da lista se estiver fora da tela
+//    }
+//  }
+//}
 
 // Atualiza e exibe todos os atores
 void handleActors() {
-  for (int i = actors.size() - 1; i >= 0; i--) { // Percorre a lista de atores de trás para frente
-    Actor actor = actors.get(i); // Obtém o ator atual
-    actor.update(); // Atualiza a posição do ator
-    actor.display(); // Exibe o ator na tela
-    if (actor.isOutOfBounds()) { // Verifica se o ator saiu dos limites da tela
-      actors.remove(i); // Remove o ator da lista se estiver fora da tela
+  for (int i = actors.size() - 1; i >= 0; i--) {
+    Actor actor = actors.get(i);
+    actor.update();
+    actor.display();
+    if (actor.isOutOfBounds()) {
+      actors.remove(i);
+    } else if (actor instanceof Chefe && ((Chefe) actor).hp <= 0) {
+      bossesKilled++;
+      println("Chefe morto. Total de chefes mortos: " + bossesKilled);
+      explosionSound.trigger(); // Aciona o som de explosão
+      // Chance de dropar um power-up
+      if (random(1) < dropChance) {
+        PowerUp powerUp = new PowerUp(actor.x, actor.y);
+        actors.add(powerUp);
+      }
+      actors.remove(i);
+    } else if (actor instanceof FinalBoss && ((FinalBoss) actor).hp <= 0) {
+      println("Final boss defeated. Starting new cycle.");
+      explosionSound.trigger(); // Aciona o som de explosão
+      // Chance de dropar um power-up
+      if (random(1) < dropChance) {
+        PowerUp powerUp = new PowerUp(actor.x, actor.y);
+        actors.add(powerUp);
+      }
+      actors.remove(i);
+      finalBossActive = false;
+      cycle++;
+      increaseDifficulty();
+      bossesKilled = 0;
     }
+  }
+
+  if (bossesKilled >= minibossesPerCycle && !finalBossActive) {
+    println("Spawning final boss.");
+    spawnFinalBoss();
+    finalBossActive = true;
   }
 }
 
 // Verifica colisões entre todos os pares de atores
 void checkCollisions() {
-  for (int i = 0; i < actors.size(); i++) { // Percorre a lista de atores
-    Actor a = actors.get(i); // Obtém o ator 'a'
-    for (int j = i + 1; j < actors.size(); j++) { // Percorre os atores seguintes
-      Actor b = actors.get(j); // Obtém o ator 'b'
-      if (a.isColliding(b)) { // Verifica colisão entre 'a' e 'b'
-        a.handleCollision(b); // Trata a colisão para o ator 'a'
-        b.handleCollision(a); // Trata a colisão para o ator 'b'
+  for (int i = 0; i < actors.size(); i++) {
+    Actor a = actors.get(i);
+    for (int j = i + 1; j < actors.size(); j++) {
+      Actor b = actors.get(j);
+      if (a.isColliding(b)) {
+        a.handleCollision(b);
+        b.handleCollision(a);
       }
     }
   }
@@ -114,6 +191,7 @@ void checkCollisions() {
 //  }
 //}
 
+// Gerencia os tiros do jogador
 void handleShooting() {
   int currentTime = millis();
   if(spacePressed & currentTime - lastFired >= fireRate) {
@@ -122,6 +200,7 @@ void handleShooting() {
       actors.add(bullet);
     }
     lastFired = currentTime;
+    shootSound.trigger();
   }
 }
 
@@ -142,6 +221,14 @@ void keyPressed() {
         spacePressed = true;
       } 
   }
+}
+
+void stop() {
+  shootSound.close();
+  explosionSound.close(); // Certifique-se de fechar o som de explosão
+  damageTake.close();
+  minim.stop();
+  super.stop();
 }
 
 // Gerencia as teclas soltas pelo jogador
@@ -167,6 +254,7 @@ void updatePlayerFrame() {
   }
 }
 
+// Gera power-ups periodicamente
 void generatePowerUps() {
   int currentTime = millis();
   if(currentTime - lastPowerUpTime >= powerUpInterval) {
@@ -176,31 +264,22 @@ void generatePowerUps() {
   }
 }
 
+// Respawn de inimigos
 void respawnEnemies() {
   int currentTime = millis();
   int enemyCount = 0;
   for (Actor actor : actors) {
-    if (actor instanceof Enemy) {
+    if (actor instanceof Chefe) {
       enemyCount++;
     }
   }
   if (enemyCount < maxEnemies && currentTime - lastEnemyRespawn >= enemyRespawnTime) {
-    spawnEnemy();
+    spawnChefe();
     lastEnemyRespawn = currentTime;
   }
 }
 
-void spawnEnemy() {
-  // Define o intervalo para o centro da tela
-  float centerX = width - (width - 200);
-  float centerY = height - (height - 100);
-  float x = centerX + random(-100, 100);
-  float y = centerY + random(-100, 100);
-  Enemy enemy = new Enemy(x, y);
-  actors.add(enemy);
-}
-
-// Adiciona um novo método para gerar balas seguidoras periodicamente
+// Gera balas seguidoras periodicamente
 void generateHomingBullets() {
   int currentTime = millis();
   if (currentTime - lastHomingFired >= homingBulletInterval) {
@@ -212,11 +291,11 @@ void generateHomingBullets() {
 
 // Exibe a tela de game over
 void showGameOverScreen() {
-  background(0); // Fundo preto para a tela de game over
+  background(0);
   textSize(32);
   fill(255);
-  text("GAME OVER", width / 2, height / 2 - 60);
   textAlign(CENTER, CENTER);
+  text("GAME OVER", width / 2, height / 2 - 60);
   text("Pressione R para reiniciar", width / 2, height / 2 - 20);
 }
 
@@ -230,11 +309,35 @@ void resetGame() {
   lastPowerUpTime = millis();
   lastEnemyRespawn = millis();
   numBullets = 1;
-  spawnEnemy();
+  bossesKilled = 0;
+  finalBossActive = false;
+  difficultyLevel = 1;
+  spawnChefe();
 }
 
-// Dispara uma bala quando o mouse é pressionado
-//void mousePressed() {
-//  Bullet bullet = new Bullet(player.x, player.y - 20); // Cria uma nova bala na posição do jogador
-//  actors.add(bullet); // Adiciona a bala à lista de atores
-//}
+// Aumenta a dificuldade do jogo
+void increaseDifficulty() {
+  difficultyLevel++;
+  minibossesPerCycle += 2; // Incrementa o número de minibosses por ciclo
+  for (Actor actor : actors) {
+    if (actor instanceof Chefe) {
+      Chefe chefe = (Chefe) actor;
+      chefe.hp += 50 * difficultyLevel;
+      chefe.fantasmasSpawnInterval -= 500;
+    }
+  }
+}
+
+void spawnChefe() {
+  float x = random(100, width - 100);
+  float y = random(50, maxYPosition);
+  Chefe chefe = new Chefe(x, y, 50 * difficultyLevel, difficultyLevel * 3);
+  actors.add(chefe);
+}
+
+void spawnFinalBoss() {
+  float x = width / 2;
+  float y = height / 4;
+  FinalBoss finalBoss = new FinalBoss(x, y, 100 * difficultyLevel, 5 * difficultyLevel);
+  actors.add(finalBoss);
+}
