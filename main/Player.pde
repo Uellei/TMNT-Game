@@ -27,16 +27,7 @@ class Player extends Actor {
     }
     super.update();
 
-    if (x < size / 2) {
-      x = size / 2;
-    } else if (x > width - size / 2) {
-      x = width - size / 2;
-    }
-    if (y < size / 2) {
-      y = size / 2;
-    } else if (y > height - size / 2) {
-      y = height - size / 2;
-    }
+    constrainPosition();
 
     int currentTime = millis();
     if (currentTime - lastHitTime < (invulnerabilityTime - 500)) {
@@ -56,6 +47,20 @@ class Player extends Actor {
       // Exibe a imagem redimensionada do jogador
       image(playerImages[currentFrame], x - imageWidth / 2, y - imageHeight / 2, imageWidth, imageHeight);
     }
+    displayHealthBar(); // Chama o método para exibir a barra de vida
+  }
+
+  void displayHealthBar() {
+    float barWidth = 10;
+    float barHeight = 100;
+    float barX = 10; // Posição da barra no lado esquerdo da tela
+    float barY = height - barHeight - 10; // Posição da barra verticalmente
+
+    fill(255, 0, 0);
+    rect(barX, barY, barWidth, barHeight); // Fundo da barra de vida (vermelha)
+    fill(0, 255, 0);
+    float currentHpHeight = map(hp, 0, 10, 0, barHeight);
+    rect(barX, barY + barHeight - currentHpHeight, barWidth, currentHpHeight); // Barra de vida (verde)
   }
 
   void handleCollision(Actor other) {
@@ -77,5 +82,10 @@ class Player extends Actor {
         isGameOver = true;
       }
     }
+  }
+
+  void constrainPosition() {
+    x = constrain(x, size / 2, width - size / 2);
+    y = constrain(y, size / 2, height - size / 2);
   }
 }
