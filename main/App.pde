@@ -58,10 +58,13 @@ int currentFrame = 0;
 int lastFrameChange = 0;
 int frameInterval = 100;
 
+void settings() {
+  // Defina o tamanho da tela baseado na resolução do dispositivo
+  size(displayWidth / 2, (int) (displayHeight / 1.2), P2D);
+}
 
 // Configuração inicial
 void setup() {
-  size(800, 800); // Define o tamanho da janela
   minim = new Minim(this);
   shootSound = minim.loadSample("../assets/soundTrack/shoot.wav", 512);
   explosionSound = minim.loadSample("../assets/soundTrack/explosion.wav", 512);
