@@ -2,10 +2,11 @@ class Player extends Actor {
   int invulnerabilityTime = 1500;
   int lastHitTime = 0;
   boolean isVisible = true;
+  float scaleFactor = 0.8; // Fator de escala para ajustar o tamanho da imagem
 
   Player(float x, float y) {
     super(x, y);
-    size = Math.max(playerImages[0].width, playerImages[0].height);
+    size = Math.max(playerImages[1].width - 20, playerImages[1].height - 20);
     hp = 10;
   }
 
@@ -48,12 +49,13 @@ class Player extends Actor {
 
   void display() {
     if (isVisible) {
-      image(playerImages[currentFrame], x - playerImages[currentFrame].width / 2, y - playerImages[currentFrame].height / 2);
+      // Ajusta o tamanho da imagem do jogador
+      float imageWidth = playerImages[currentFrame].width;
+      float imageHeight = playerImages[currentFrame].height;
+      
+      // Exibe a imagem redimensionada do jogador
+      image(playerImages[currentFrame], x - imageWidth / 2, y - imageHeight / 2, imageWidth, imageHeight);
     }
-    // Código de debug, caso necessário
-    // noFill();
-    // stroke(255, 0, 0);
-    // rect(x - playerImages[currentFrame].width / 2, y - playerImages[currentFrame].height / 2, playerImages[currentFrame].width, playerImages[currentFrame].height);
   }
 
   void handleCollision(Actor other) {
@@ -64,9 +66,11 @@ class Player extends Actor {
     if (other instanceof PowerUp) {
       numBullets++;
       actors.remove(other);
-    } else if (other instanceof Chefe || other instanceof Fantasma || other instanceof FinalBoss) {
+    } else if (other instanceof Chefe || other instanceof Fantasma || other instanceof FinalBoss || other instanceof BossBullet) {
       damageTake.trigger();
-      hp -= other instanceof Fantasma ? 1 : 5;
+      println(other);
+      hp -= (other instanceof Fantasma || other instanceof BossBullet) ? 1 : 5;
+      println(hp);
       lastHitTime = currentTime;
       if (hp <= 0) {
         actors.remove(this);

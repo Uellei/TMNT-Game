@@ -1,5 +1,6 @@
 import ddf.minim.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 Minim minim;
 AudioSample shootSound;
@@ -13,6 +14,14 @@ ArrayList<Actor> actors;
 Player player;
 PImage backgroundImage;
 
+// Mensagens Screen
+boolean showingPhaseMessage = false;
+String phaseMessage = "";
+int messageY = 0;
+int messageStartTime = 0;
+int phaseDisplayDuration = 2000; // Duração da exibição da mensagem em milissegundos
+int phaseMessageSpeed = 5; // Velocidade de descida da mensagem
+
 // Movimentações do Jogador
 boolean leftPressed = false; // Flag para a tecla 'A'
 boolean rightPressed = false; // Flag para a tecla 'D'
@@ -24,26 +33,24 @@ boolean spacePressed = false; // Flag para a barra de espaço.
 int fireRate = 100; // Intervalo entre tiros em milissegundos (0.5s)
 int lastFired = 0;
 int numBullets = 1; // Número inicial de balas disparadas
-int powerUpInterval = 5000; // Intervalo para aparecer um novo poder em milissegundos
-int lastPowerUpTime = 0; // Tempo da última geração de poder
 int homingBulletInterval = 300;
 int lastHomingFired = 0;
-float dropChance = 1; // Chance de drop de power-up (20%)
+float dropChance = .2; // Chance de drop de power-up (20%)
 PImage powerUpImage;
 
 // Enemies
 PImage chefeImage;
 PImage fantasmaImage;
 PImage finalBoss;
-int maxEnemies = 1; // Número máximo de miniboss na tela
+int maxEnemies = 3; // Número máximo de miniboss na tela
 int enemyRespawnTime = 1000;
 int lastEnemyRespawn = 0;
 int bossesKilled = 0; // Contador de minibosses mortos
+int allBossKilled = 0;
 int difficultyLevel = 1; // Nível inicial de dificuldade
 int cycle = 1; // Variável para contar o número de ciclos/fases
 int minibossesPerCycle = 3; // Número de minibosses por ciclo antes de spawnar o boss
 boolean finalBossActive = false; // Flag para controlar a presença do boss
-int maxYPosition = 200; // Máxima posição Y para o spawn dos chefes
 
 // Frames da imagem da nave
 PImage[] playerImages = new PImage[3];
@@ -60,8 +67,8 @@ void setup() {
   explosionSound = minim.loadSample("../assets/soundTrack/explosion.wav", 512);
   damageTake = minim.loadSample("../assets/soundTrack/damageTake-2.wav", 512);
   
-  shootSound.setGain(-5); // Reduz o volume do som de tiro
-  explosionSound.setGain(-3); // Reduz o volume do som de explosão
+  shootSound.setGain(-20); // Reduz o volume do som de tiro
+  explosionSound.setGain(-20); // Reduz o volume do som de explosão
   
   initializateGame();
 }
@@ -78,8 +85,10 @@ void draw() {
     handleShooting();
     //generateHomingBullets();
     updatePlayerFrame(); // Atualiza o frame do jogador
-    //generatePowerUps(); // Gera poderes periodicamente
     respawnEnemies();
+  }
+  if(showingPhaseMessage) {
+    displayPhaseMessage();
   }
 }
 
@@ -88,6 +97,11 @@ void initializateGame() {
   playerImages[0] = loadImage("../assets/images/naves/nave1/nave1-nivel2-frame1.png");
   playerImages[1] = loadImage("../assets/images/naves/nave1/nave1-nivel2-frame2.png");
   playerImages[2] = loadImage("../assets/images/naves/nave1/nave1-nivel2-frame3.png");
+  for (PImage img : playerImages) {
+        if (img == null) {
+            println("Error loading player image");
+        }
+    }
   // Nave 2
   //playerImages[0] = loadImage("../assets/images/naves/nave2/nave-frame1.png");
   //playerImages[1] = loadImage("../assets/images/naves/nave2/nave-frame2.png");
@@ -123,43 +137,14 @@ void initializateGame() {
 
 // Atualiza e exibe todos os atores
 void handleActors() {
-  for (int i = actors.size() - 1; i >= 0; i--) {
-    Actor actor = actors.get(i);
-    actor.update();
-    actor.display();
-    if (actor.isOutOfBounds()) {
-      actors.remove(i);
-    } else if (actor instanceof Chefe && ((Chefe) actor).hp <= 0) {
-      bossesKilled++;
-      println("Chefe morto. Total de chefes mortos: " + bossesKilled);
-      explosionSound.trigger(); // Aciona o som de explosão
-      // Chance de dropar um power-up
-      if (random(1) < dropChance) {
-        PowerUp powerUp = new PowerUp(actor.x, actor.y);
-        actors.add(powerUp);
-      }
-      actors.remove(i);
-    } else if (actor instanceof FinalBoss && ((FinalBoss) actor).hp <= 0) {
-      println("Final boss defeated. Starting new cycle.");
-      explosionSound.trigger(); // Aciona o som de explosão
-      // Chance de dropar um power-up
-      if (random(1) < dropChance) {
-        PowerUp powerUp = new PowerUp(actor.x, actor.y);
-        actors.add(powerUp);
-      }
-      actors.remove(i);
-      finalBossActive = false;
-      cycle++;
-      increaseDifficulty();
-      bossesKilled = 0;
+    for (int i = actors.size() - 1; i >= 0; i--) {
+        Actor actor = actors.get(i);
+        actor.update();
+        actor.display();
+        if (actor.isOutOfBounds()) {
+            actors.remove(i);
+        }
     }
-  }
-
-  if (bossesKilled >= minibossesPerCycle && !finalBossActive) {
-    println("Spawning final boss.");
-    spawnFinalBoss();
-    finalBossActive = true;
-  }
 }
 
 // Verifica colisões entre todos os pares de atores
@@ -254,16 +239,6 @@ void updatePlayerFrame() {
   }
 }
 
-// Gera power-ups periodicamente
-void generatePowerUps() {
-  int currentTime = millis();
-  if(currentTime - lastPowerUpTime >= powerUpInterval) {
-    PowerUp powerUp = new PowerUp(random(20, width - 20), -20);
-    actors.add(powerUp);
-    lastPowerUpTime = currentTime;
-  }
-}
-
 // Respawn de inimigos
 void respawnEnemies() {
   int currentTime = millis();
@@ -273,7 +248,7 @@ void respawnEnemies() {
       enemyCount++;
     }
   }
-  if (enemyCount < maxEnemies && currentTime - lastEnemyRespawn >= enemyRespawnTime) {
+  if (enemyCount < maxEnemies && currentTime - lastEnemyRespawn >= enemyRespawnTime && !finalBossActive && !showingPhaseMessage) {
     spawnChefe();
     lastEnemyRespawn = currentTime;
   }
@@ -297,7 +272,37 @@ void showGameOverScreen() {
   textAlign(CENTER, CENTER);
   text("GAME OVER", width / 2, height / 2 - 60);
   text("Pressione R para reiniciar", width / 2, height / 2 - 20);
+  text("Enemyes Killed: " + allBossKilled, width / 2, height / 2 - 40);
 }
+
+// Exibe tela da Fase
+void startPhaseMessage(int phase) {
+  showingPhaseMessage = true;
+  phaseMessage = "Fase " + phase + " Iniciada";
+  messageY = -50; // Começa fora da tela
+  messageStartTime = millis();
+}
+
+void displayPhaseMessage() {
+  fill(0, 0, 0, 150); // Fundo semitransparente
+  rect(0, 0, width, height);
+  
+  textSize(32);
+  fill(255);
+  textAlign(CENTER, CENTER);
+  text(phaseMessage, width / 2, messageY);
+  
+  messageY += phaseMessageSpeed;
+  
+  if (messageY >= height / 2) {
+    messageY = height / 2; // Parar no centro da tela
+  }
+  
+  if (millis() - messageStartTime >= phaseDisplayDuration) {
+    showingPhaseMessage = false;
+  }
+}
+
 
 // Função para reiniciar o jogo
 void resetGame() {
@@ -306,7 +311,6 @@ void resetGame() {
   player = new Player(width / 2, height - 50);
   actors.add(player);
   lastFired = millis();
-  lastPowerUpTime = millis();
   lastEnemyRespawn = millis();
   numBullets = 1;
   bossesKilled = 0;
@@ -317,27 +321,51 @@ void resetGame() {
 
 // Aumenta a dificuldade do jogo
 void increaseDifficulty() {
+  println("Dificuldade Aumentada");
   difficultyLevel++;
   minibossesPerCycle += 2; // Incrementa o número de minibosses por ciclo
-  for (Actor actor : actors) {
-    if (actor instanceof Chefe) {
-      Chefe chefe = (Chefe) actor;
-      chefe.hp += 50 * difficultyLevel;
-      chefe.fantasmasSpawnInterval -= 500;
-    }
+  cycle++;
+  if (attackInterval > 1000) {
+    attackInterval -= 500;
+    fantasmasSpawnInterval -= 250;
+    speedFantasma += 2;
+  }
+  if(numBullets < cycle && cycle < 5) {
+    numBullets++;
   }
 }
 
 void spawnChefe() {
-  float x = random(100, width - 100);
-  float y = random(50, maxYPosition);
-  Chefe chefe = new Chefe(x, y, 50 * difficultyLevel, difficultyLevel * 3);
-  actors.add(chefe);
-}
+  float x, y;
+  boolean validPosition;
+  int maxAttempts = 100; // Limite de tentativas para encontrar uma posição válida
+  int attempts = 0;
+  float minYPosition = 100; // Posição Y mínima para spawnar os chefes
+  float maxYPosition = 150; // Posição Y máxima para spawnar os chefes
 
-void spawnFinalBoss() {
-  float x = width / 2;
-  float y = height / 4;
-  FinalBoss finalBoss = new FinalBoss(x, y, 100 * difficultyLevel, 5 * difficultyLevel);
-  actors.add(finalBoss);
+  do {
+    x = random(100, width - 100);
+    y = random(minYPosition, maxYPosition);
+    validPosition = true;
+
+    for (Actor actor : actors) {
+      if (actor instanceof Chefe) {
+        float distance = dist(x, y, actor.x, actor.y);
+        if (distance < 100) {
+          validPosition = false;
+           break;
+        }
+      }
+    }
+
+    attempts++;
+    if (attempts >= maxAttempts) {
+      println("Não foi possível encontrar uma posição válida para o chefe.");
+      return; // Sai do loop se não encontrar uma posição válida após várias tentativas
+    }
+  } while (!validPosition);
+
+  Chefe chefe = new Chefe(x, y, 50 + (30 * difficultyLevel), difficultyLevel * 3);
+  println("Spawned Chefe with HP:", chefe.hp);
+  actors.add(chefe);
 }

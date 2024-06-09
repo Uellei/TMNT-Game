@@ -2,7 +2,8 @@ class Actor {
   float x, y, vx, vy;
   float size = 20;
   int hp = 10;
-  
+  boolean markedForRemoval = false; // Variável para marcar atores para remoção
+
   Actor(float x, float y) {
     this.x = x;
     this.y = y;
@@ -41,7 +42,11 @@ class Actor {
   void takeDamage(int damage) {
     hp -= damage;
     if (hp <= 0) {
-      actors.remove(this);
+      markForRemoval();
     }
+  }
+
+  void markForRemoval() {
+    markedForRemoval = true;
   }
 }

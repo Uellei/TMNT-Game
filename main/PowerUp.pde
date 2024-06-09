@@ -21,7 +21,6 @@ class PowerUp extends Actor {
   void handleCollision(Actor other) {
     if (other instanceof Player) {
       // Lógica para coletar o power-up
-      println("Power-up coletado!");
       // Aqui você pode adicionar lógica para o efeito do power-up
       actors.remove(this); // Remove o power-up após ser coletado
     }

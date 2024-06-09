@@ -1,5 +1,4 @@
 class Chefe extends Actor {
-  int fantasmasSpawnInterval = 2000;
   int lastFantasmaSpawn = 0;
   int numFantasmas;
 
@@ -13,12 +12,6 @@ class Chefe extends Actor {
 
   void display() {
     image(chefeImage, x - chefeImage.width / 2, y - chefeImage.height / 2);
-    
-    //// Debug: desenha um retângulo em volta do chefe
-    //noFill();
-    //stroke(255, 0, 0);
-    //rect(x - chefeImage.width / 2, y - chefeImage.height / 2, chefeImage.width, chefeImage.height);
-    
     displayHealthBar();
   }
 
@@ -32,33 +25,48 @@ class Chefe extends Actor {
     }
     // Lógica de atualização do chefe
     if (hp <= 0) {
-      // Drop de power-up acontece na função handleActors()
       explosionSound.trigger();
     }
   }
-
-  //void handleCollision(Actor other) {
-  //  if (other instanceof Player) {
-  //    other.takeDamage(5); // Aplica dano ao jogador ao colidir com o Chefe
-  //  }
-  //}
   
   void takeDamage(int damage) {
     hp -= damage;
     if (hp <= 0) {
+      bossesKilled++;
+      allBossKilled++;
+      println("Boss Mortos:", bossesKilled);
       actors.remove(this);
       // Drop de power-up com base na chance de drop
       if (random(1) < dropChance) {
         PowerUp powerUp = new PowerUp(x, y);
         actors.add(powerUp);
       }
+      if (bossesKilled >= minibossesPerCycle) {
+        spawnFinalBoss();
+        bossesKilled = 0;
+      }
     }
   }
+  
+  void spawnFinalBoss() {
+    for (int i = actors.size() - 1; i >= 0; i--) {
+      Actor actor = actors.get(i);
+      if (actor instanceof Chefe) {
+        actors.remove(i);
+      }
+    }
+    FinalBoss finalBoss = new FinalBoss(width / 2, 180, 200 * difficultyLevel, 5 * difficultyLevel);
+    actors.add(finalBoss);
+    finalBossActive = true;
+  }
 
-  void displayHealthBar() {
+    void displayHealthBar() {
+    float totalHp = 50 + (30 * difficultyLevel); 
     fill(255, 0, 0);
-    rect(x - 25, y - chefeImage.height / 2 - 10, 50, 5);
+    rect(x - 25, y - chefeImage.height / 2 - 10, 60, 5);
+
     fill(0, 255, 0);
-    rect(x - 25, y - chefeImage.height / 2 - 10, map(hp, 0, 50 * difficultyLevel, 0, 50), 5);
+    float currentHpWidth = map(hp, 0, totalHp, 0, 60);
+    rect(x - 25, y - chefeImage.height / 2 - 10, currentHpWidth, 5);
   }
 }

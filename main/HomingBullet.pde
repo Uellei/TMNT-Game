@@ -41,14 +41,4 @@ class HomingBullet extends Actor {
     fill(0, 255, 0);
     rect(x - 2, y - 2, 5, 5);
   }
-
-  void handleCollision(Actor other) {
-    if (other instanceof Chefe || other instanceof FinalBoss) {
-      other.hp--;
-      if (other.hp <= 0) {
-        actors.remove(other);
-      }
-      actors.remove(this);
-    }
-  }
 }

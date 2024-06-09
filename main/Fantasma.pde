@@ -1,3 +1,4 @@
+int speedFantasma = 5;
 // Classe para os fantasmas
 class Fantasma extends Actor {
   Player target;
@@ -11,17 +12,13 @@ class Fantasma extends Actor {
 
   void display() {
     image(fantasmaImage, x - fantasmaImage.width / 2, y - fantasmaImage.height / 2);
-    // Debug: desenha um retângulo em volta do fantasma
-    //noFill();
-    //stroke(0, 0, 255);
-    //rect(x - fantasmaImage.width / 2, y - fantasmaImage.height / 2, fantasmaImage.width, fantasmaImage.height);
   }
 
   void update() {
     super.update();
     float angle = atan2(target.y - y, target.x - x);
-    vx = 3 * cos(angle);
-    vy = 3 * sin(angle);
+    vx = speedFantasma * cos(angle);
+    vy = speedFantasma * sin(angle);
   }
 
   void handleCollision(Actor other) {
