@@ -1,18 +1,30 @@
+// Classe PowerUp modificada para descer lentamente
 class PowerUp extends Actor {
+  float speed = 3; // Velocidade de descida do power-up
+
   PowerUp(float x, float y) {
     super(x, y);
-    vy = 2; // Movimento para baixo
-    size = 20; // Define o tamanho do poder
   }
-  
-  // Exibe o poder como um círculo
+
+  void update() {
+    y += speed; // Move o power-up para baixo lentamente
+  }
+
   void display() {
-    fill(0,255,0);
-    ellipse(x,y,size,size);
+    image(powerUpImage,x,y);
   }
-  
-  // Verifica se o poder saiu dos limites da tela
+
   boolean isOutOfBounds() {
-    return y > height;
+    return y > height; // Remove o power-up quando sai da tela
+  }
+
+  void handleCollision(Actor other) {
+    if (other instanceof Player) {
+      // Lógica para coletar o power-up
+      // Aqui você pode adicionar lógica para o efeito do power-up
+      actors.remove(this); // Remove o power-up após ser coletado
+    }
   }
 }
+
+// 

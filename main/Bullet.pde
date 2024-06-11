@@ -1,24 +1,22 @@
-// Classe para as balas, que são um tipo de ator
 class Bullet extends Actor {
   Bullet(float x, float y) {
     super(x, y);
-    vy = -17; // Define a velocidade vertical para cima
+    vy = -17;
     size = 5;
-  }       
-
-  // Exibe a bala como um retângulo
-  void display() {
-    fill(244,239,32);
-    rect(x - 1 , y - 15, 5, 12);
   }
-  
+
+  void display() {
+    fill(244, 239, 32);
+    rect(x - 1, y - 15, 5, 12);
+  }
+
   void handleCollision(Actor other) {
-    if(other instanceof Enemy) {
-      other.hp--;
-      if (other.hp <= 0) {
-        actors.remove(other);
+    if (other instanceof Chefe || other instanceof Fantasma || other instanceof FinalBoss) {
+      other.takeDamage(1); // Delegue o dano ao outro ator
+      actors.remove(this); // Remove o bullet
+      if (other instanceof Chefe && other.hp <= 0) {
+        explosionSound.trigger();
       }
-      actors.remove(this);
     }
   }
-}
+} 
