@@ -41,4 +41,14 @@ class HomingBullet extends Actor {
     fill(0, 255, 0);
     rect(x - 2, y - 2, 5, 5);
   }
+
+  void handleCollision(Actor other) {
+    if (other instanceof Chefe || other instanceof FinalBoss) {
+      other.takeDamage(1); // Delegue o dano ao outro ator
+      actors.remove(this); // Remove o bullet seguidor
+      if (other instanceof Chefe && other.hp <= 0) {
+        explosionSound.trigger();
+      }
+    }
+  }
 }

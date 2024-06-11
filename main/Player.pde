@@ -80,6 +80,7 @@ class Player extends Actor {
       if (hp <= 0) {
         actors.remove(this);
         isGameOver = true;
+        state = GAME_OVER_STATE;
       }
     }
   }
