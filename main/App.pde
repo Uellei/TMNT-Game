@@ -93,7 +93,7 @@ void setup() {
   moveLeftImage = loadImage("../assets/images/menu/mova-esquerda.png");
   moveDownImage = loadImage("../assets/images/menu/mova-baixo.png");
   moveRightImage = loadImage("../assets/images/menu/mova-direita.png");
-  shootImage = loadImage("../assets/images/menu/mova-cima.png");
+  shootImage = loadImage("../assets/images/menu/barra-espaco.png");
   
   wasdDescriptionImage = loadImage("../assets/images/menu/how-to-play-help1.png");
   spaceDescriptionImage = loadImage("../assets/images/menu/how-to-play-help2.png");
