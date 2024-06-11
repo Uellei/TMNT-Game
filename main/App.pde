@@ -110,7 +110,8 @@ void setup() {
   carregarImagensNaves();
   
   // Carregar imagens dos inimigos e power-ups
-  chefeImage = loadImage("../assets/images/enemy/boss-frame-1.png");
+  chefeImages[0] = loadImage("../assets/images/enemy/boss-frame-2.png");
+  chefeImages[1] = loadImage("../assets/images/enemy/boss-frame-2.png");
   fantasmaImage = loadImage("../assets/images/enemy/gosth.png");
   finalBoss = loadImage("../assets/images/enemy/finalboss.png");
   powerUpImage = loadImage("../assets/images/powerUp.png");
