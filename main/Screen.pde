@@ -266,7 +266,7 @@ void drawGame() {
   handleActors(); // Atualiza e exibe todos os atores
   checkCollisions(); // Verifica colisões entre atores
   handleShooting();
-  if (cycle > 0) {
+  if (cycle > 5) {
     generateHomingBullets();
   }
   updatePlayerFrame(); // Atualiza o frame do jogador
@@ -308,6 +308,8 @@ void howToPlay() {
 }
 
 void drawStoryScreen() {
+  font = createFont("arial", 22, true);
+  textFont(font);
   drawBackground();
   drawSetaEsquerda();
 

@@ -1,29 +1,40 @@
+PImage[] chefeImages = new PImage[2];
+int currentChefeFrame = 0;
+int lastChefeFrameChange = 0;
+int chefeFrameInterval = 500; // Tempo entre a troca de frames em milissegundos
+
 class Chefe extends Actor {
   int lastFantasmaSpawn = 0;
   int numFantasmas;
+  int currentChefeFrame = 0;
+  int lastChefeFrameChange = 0;
+  int chefeFrameInterval = 500; // Tempo entre a troca de frames em milissegundos
 
   Chefe(float x, float y, int hp, int numFantasmas) {
     super(x, y);
     this.vy = 0;
     this.hp = hp;
     this.numFantasmas = numFantasmas;
-    size = Math.max(chefeImage.width, chefeImage.height); // Ajuste o size conforme a imagem
+    size = Math.max(chefeImages[0].width, chefeImages[0].height); // Ajuste o size conforme a imagem
   }
 
   void display() {
-    image(chefeImage, x - chefeImage.width / 2, y - chefeImage.height / 2);
+    image(chefeImages[currentChefeFrame], x - chefeImages[currentChefeFrame].width / 2, y - chefeImages[currentChefeFrame].height / 2);
     displayHealthBar();
   }
 
   void update() {
     super.update();
     int currentTime = millis();
+    if (currentTime - lastChefeFrameChange >= chefeFrameInterval) {
+      currentChefeFrame = (currentChefeFrame + 1) % chefeImages.length;
+      lastChefeFrameChange = currentTime;
+    }
     if (currentTime - lastFantasmaSpawn >= fantasmasSpawnInterval) {
       Fantasma fantasma = new Fantasma(x, y, player);
       actors.add(fantasma);
       lastFantasmaSpawn = currentTime;
     }
-    // Lógica de atualização do chefe
     if (hp <= 0) {
       explosionSound.trigger();
     }
@@ -60,13 +71,13 @@ class Chefe extends Actor {
     finalBossActive = true;
   }
 
-    void displayHealthBar() {
+  void displayHealthBar() {
     float totalHp = 50 + (30 * difficultyLevel); 
     fill(255, 0, 0);
-    rect(x - 25, y - chefeImage.height / 2 - 10, 60, 5);
+    rect(x - 25, y - chefeImages[currentChefeFrame].height / 2 - 10, 60, 5);
 
     fill(0, 255, 0);
     float currentHpWidth = map(hp, 0, totalHp, 0, 60);
-    rect(x - 25, y - chefeImage.height / 2 - 10, currentHpWidth, 5);
+    rect(x - 25, y - chefeImages[currentChefeFrame].height / 2 - 10, currentHpWidth, 5);
   }
 }
